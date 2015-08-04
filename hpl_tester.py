@@ -77,9 +77,19 @@ class HPLTool:
         """ Determines the best P and Q to use, having P < Q """
         factors = self._get_all_factors()
         # TODO: use recursion (?) to determine which pair of factors is the best    
-        # choice based on how close they to each other and if their product is 
+        # choice based on how close they are to each other and if their product is
         # equal to the total number of cores
-        return None
+        p_q = []
+        for i in range(len(factors)):
+            temp_p = factors[i]
+            if temp_p * temp_p == self.total_cores:  # factor is a square root of the total cores
+                p_q.append((temp_p, temp_p))
+            for j in range(i+1, len(factors)):
+                temp_q = factors[j]
+                if temp_p*temp_q == self.total_cores:
+                    #if abs(temp_p - temp_q) > 0 and abs(temp_p - temp_q) <= abs(p_q[0] - p_q[1]):
+                    p_q.append((temp_p, temp_q)) # append a tuple of a possible p_q combo
+        return p_q
 
     def optimize_N_vals(self):
         for i in range(96, 257, 8):
@@ -135,9 +145,9 @@ if __name__ == '__main__':
     hpl.optimize_N_vals()
     hpl.print_all_N_vals()
     print("total cores: %d" % hpl.total_cores)
-    hpl.find_P_and_Q_vals()
+    print(hpl.find_P_and_Q_vals())
     #hpl.create_dat_file(hpl.N_vals[128], 128, 1, 4)
 
     # make a new directory for every combo of N_val
     #for k, v in hpl.N_vals.items
-    hpl.create_dirs_and_dats()
+    #hpl.create_dirs_and_dats()
