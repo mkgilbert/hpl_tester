@@ -1,4 +1,4 @@
-#!/usr/env python
+#!/usr/bin/env python
 """ 
 A tool to calculate various N and NB values for HPL and run several tests
 using different combinations of them on a given set of cores/nodes/memory.
