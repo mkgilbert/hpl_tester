@@ -58,8 +58,8 @@ class HPLTool:
         self.mem = mem_in_gb
         self.N = int((round(math.sqrt((mem_in_gb * 1024 * 1024 * 1024 * nodes)/8))) * 0.90)
         self.total_cores = cores_per_node * nodes
-        self.p = 1
-        self.q = 4 
+        self.p = None
+        self.q = None
         self.N_vals = {}
     
     def _get_all_factors(self):
@@ -72,8 +72,31 @@ class HPLTool:
 
         factors.append(1)
         return factors
-        
-    def find_P_and_Q_vals(self):
+
+    def _find_best_p_q(self, tuples):
+        """
+        Determines which pair of p/q values is best to use
+        :param tuples: list of tuples containing p and q values
+        :return: a tuple of the optimal p/q pair to use
+        """
+        best_diff = None # optimal difference between p and q
+        best_tuple = None
+
+        for tuple in tuples:
+            diff = abs(tuple[0] - tuple[1]) # difference between p and q
+            if best_diff == None:
+                best_diff = diff
+                best_tuple = tuple
+
+            if diff < best_diff: # the current difference is better
+                best_diff = diff
+                best_tuple = tuple
+            else: # keep current best
+                continue
+
+        return best_tuple
+
+    def find_p_and_q_vals(self):
         """ Determines the best P and Q to use, having P < Q """
         factors = self._get_all_factors()
         # TODO: use recursion (?) to determine which pair of factors is the best    
@@ -89,7 +112,16 @@ class HPLTool:
                 if temp_p*temp_q == self.total_cores:
                     #if abs(temp_p - temp_q) > 0 and abs(temp_p - temp_q) <= abs(p_q[0] - p_q[1]):
                     p_q.append((temp_p, temp_q)) # append a tuple of a possible p_q combo
-        return p_q
+
+        best_p_q = self._find_best_p_q(p_q)
+        if best_p_q[0] > best_p_q[1]:
+            self.q = best_p_q[0]
+            self.p = best_p_q[1]
+        else:
+            self.q = best_p_q[1]
+            self.p = best_p_q[0]
+
+        return (self.p, self.q)
 
     def optimize_N_vals(self):
         for i in range(96, 257, 8):
@@ -145,7 +177,7 @@ if __name__ == '__main__':
     hpl.optimize_N_vals()
     hpl.print_all_N_vals()
     print("total cores: %d" % hpl.total_cores)
-    print(hpl.find_P_and_Q_vals())
+    print(hpl.find_p_and_q_vals())
     #hpl.create_dat_file(hpl.N_vals[128], 128, 1, 4)
 
     # make a new directory for every combo of N_val
