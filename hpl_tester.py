@@ -177,9 +177,11 @@ if __name__ == '__main__':
     hpl.optimize_N_vals()
     hpl.print_all_N_vals()
     print("total cores: %d" % hpl.total_cores)
-    print(hpl.find_p_and_q_vals())
-    #hpl.create_dat_file(hpl.N_vals[128], 128, 1, 4)
+    p_and_q = hpl.find_p_and_q_vals()
+    print("Best P: %s" % p_and_q[0])
+    print("Best Q: %s" % p_and_q[1])
+    hpl.create_dat_file(hpl.N_vals[128], 128, 1, 4)
 
     # make a new directory for every combo of N_val
-    #for k, v in hpl.N_vals.items
-    #hpl.create_dirs_and_dats()
+    for k, v in hpl.N_vals.items():
+        hpl.create_dirs_and_dats()
