@@ -178,54 +178,61 @@ class HPLTool:
 class Slurm:
     # TODO: need to know how many folders there are and pass that in as the array #
     # TODO: get every line of the .dirs_list.tmp file and use SLURM_ARRAY_TASK_ID to get a line
-    def __init__(self):
+    def __init__(self, **kwargs):
         # create a temp file to hold a list of all the directories
         try:
             cmd = 'ls > .dirs_list.tmp'
             popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
             out = popen.communicate()
         except:
-            print("There was an error creating the temp file directory")
+            print("There was an error creating the temp file")
             return
-        
+
         # get the total number of directories with HPL.dat files, so we know how big
         # to make the slurm array
         dirs = []
         for (dirpath, dirnames, filenames) in os.walk('.'):
             dirs.extend(dirnames) # only get directories, not files
         array_size = len(dirs)
+        kwargs['array_size'] = array_size
+        
+        # set memory to a MB number instead of GB
+        kwargs['mem'] = int(kwargs['mem'])*1000
+
+        # create the output directory where all the slurm log files will go
+        try:
+            os.mkdir('output')
+        except:
+            print("folder 'output' exists")
 
         sbatch = Template('''#!/bin/bash
 #SBATCH --partition=$queue
 #SBATCH --time=$hours:00:00
-#SBATCH -o $dir/output/hpl_test_%j.log
+#SBATCH -o $root_dir/output/hpl_test_%j.log
 #SBATCH --job-name=hpl_tester
-#SBATCH --ntasks=$procs
-#SBATCH --workdir=$dir
+#SBATCH --ntasks=$ntasks
+#SBATCH --workdir=$root_dir
 #SBATCH --mem=$mem
-#SBATCH --array=1-$size
+#SBATCH --array=1-$array_size
 
 # grab line # SLURM_ARRAY_TASK_ID from dirs_list.tmp
+HPL_DAT_DIR=$$(sed -n "$$SLURM_ARRAY_TASK_ID"p .dirs_list.tmp)
 # cd into the directory
+cd $root_dir/$$HPL_DAT_DIR
 
-$path
-
-srun xhpl
+echo "This is array task $$SLURM_ARRAY_TASK_ID"
+echo "should be in directory $$HPL_DAT_DIR"
+srun --mpi=pmi2 xhpl 
         ''')
+         
+        for key,value in kwargs.items():
+            setattr(self, key, value)
 
-        self.queue = "all"
-        self.mem = '200'
-        self.hours = '2'
-        self.root_dir = os.getcwd()
-        self.procs = '4'
-        sbatch = sbatch.substitute(dict(cmd=cmd, queue=self.queue, mem=self.mem, hours=self.hours,
-                                        procs=self.procs, dir=self.root_dir, size=array_size,
-                                        path=os.environ.get('PATH', 'none')))
-
+        sbatch = sbatch.substitute(dict(**kwargs))
         print('Submitting *****{\n%s\n}*****' % sbatch)
-        #popen = subprocess.Popen('sbatch', shell = True, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
-        #out = popen.communicate(sbatch.encode())[0].strip() #e.g. something like "Submitted batch job 209"
-        #return out
+        popen = subprocess.Popen('sbatch', shell = True, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
+        out = popen.communicate(sbatch.encode())[0].strip() #e.g. something like "Submitted batch job 209"
+        print("Slurm batch output: %s" % out)
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -252,5 +259,7 @@ if __name__ == '__main__':
     #for k, v in hpl.N_vals.items():
     #    hpl.create_dirs_and_dats()
     hpl.create_dirs_and_dats()
+    ntasks = int(nodes) * int(procs)
+    # You must include all of these args! It will fail if one of them is left out
+    slurm = Slurm(queue='hp', mem=mem, ntasks=ntasks, hours=2, root_dir=os.getcwd())
 
-    slurm = Slurm()
