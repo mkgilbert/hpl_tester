@@ -12,6 +12,11 @@ import os
 import subprocess
 from string import Template
 
+HPL_BIN_DIR = os.path.join(os.getcwd(), '../hpl-2.1/bin')
+XHPL_PATH = os.path.join(HPL_BIN_DIR, os.listdir(HPL_BIN_DIR)[0])
+
+os.environ['PATH'] += (':' + XHPL_PATH) # add xhpl path to PATH environent variable
+
 HPL_DAT = Template('''HPLinpack benchmark input file # 3 nodes, 72 cpus - Haswell
 Innovative Computing Laboratory, University of Tennessee
 HPL.out      output file name (if any)
@@ -182,6 +187,13 @@ class Slurm:
         except:
             print("There was an error creating the temp file directory")
             return
+        
+        # get the total number of directories with HPL.dat files, so we know how big
+        # to make the slurm array
+        dirs = []
+        for (dirpath, dirnames, filenames) in os.walk('.'):
+            dirs.extend(dirnames) # only get directories, not files
+        array_size = len(dirs)
 
         sbatch = Template('''#!/bin/bash
 #SBATCH --partition=$queue
@@ -191,9 +203,12 @@ class Slurm:
 #SBATCH --ntasks=$procs
 #SBATCH --workdir=$dir
 #SBATCH --mem=$mem
+#SBATCH --array=1-$size
 
 # grab line # SLURM_ARRAY_TASK_ID from dirs_list.tmp
 # cd into the directory
+
+$path
 
 srun xhpl
         ''')
@@ -204,7 +219,9 @@ srun xhpl
         self.root_dir = os.getcwd()
         self.procs = '4'
         sbatch = sbatch.substitute(dict(cmd=cmd, queue=self.queue, mem=self.mem, hours=self.hours,
-                                        procs=self.procs, dir=self.root_dir))
+                                        procs=self.procs, dir=self.root_dir, size=array_size,
+                                        path=os.environ.get('PATH', 'none')))
+
         print('Submitting *****{\n%s\n}*****' % sbatch)
         #popen = subprocess.Popen('sbatch', shell = True, stdin = subprocess.PIPE, stdout = subprocess.PIPE)
         #out = popen.communicate(sbatch.encode())[0].strip() #e.g. something like "Submitted batch job 209"
@@ -229,7 +246,7 @@ if __name__ == '__main__':
         pass
     os.chdir('test_runs')
 
-    hpl.create_dat_file(hpl.N_vals[128], 4, 1, 8)
+    #hpl.create_dat_file(hpl.N_vals[128], 4, 1, 8)
 
     # make a new directory for every combo of N_val
     #for k, v in hpl.N_vals.items():
