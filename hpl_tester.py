@@ -11,6 +11,7 @@ import sys
 import os
 import subprocess
 from string import Template
+import getopt
 
 HPL_BIN_DIR = os.path.join(os.getcwd(), '../hpl-2.1/bin')
 XHPL_PATH = os.path.join(HPL_BIN_DIR, os.listdir(HPL_BIN_DIR)[0])
@@ -234,11 +235,39 @@ srun --mpi=pmi2 xhpl
         out = popen.communicate(sbatch.encode())[0].strip() #e.g. something like "Submitted batch job 209"
         print("Slurm batch output: %s" % out)
 
-if __name__ == '__main__':
-    args = sys.argv[1:]
-    nodes = int(args[0])
-    procs = int(args[1])
-    mem = int(args[2])
+def main(argv):
+    nodes = None
+    procs = None
+    mem = None
+
+    help_display = '''
+usage: python hpl_tester.py --nodes=<number_of_nodes> --procs=<procs_per_node> --mem=<memory_in_GB>
+note: ** all args are mandatory
+    '''
+    try:
+        opts, args = getopt.getopt(argv, "hn:p:m:", ["nodes=", "procs=", "mem="])
+    except getopt.GetoptError:
+        print(help_display)
+        sys.exit(2)
+
+    if len(opts) == 0 or len(opts) < 3:
+        print(help_display)
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == "-h":
+            print(help_display)
+            sys.exit()
+        elif opt in ("-n", "--nodes"):
+            nodes = int(arg)
+        elif opt in ("-p", "--procs"):
+            procs = int(arg)
+        elif opt in ("-m", "--mem"):
+            mem = int(arg)
+
+    if nodes is None or procs is None or mem is None:
+        print(help_display)
+        sys.exit(2)
 
     hpl = HPLTool(nodes, procs, mem)
     hpl.optimize_N_vals()
@@ -258,8 +287,13 @@ if __name__ == '__main__':
     # make a new directory for every combo of N_val
     #for k, v in hpl.N_vals.items():
     #    hpl.create_dirs_and_dats()
+    print("Creating output directories...")
     hpl.create_dirs_and_dats()
     ntasks = int(nodes) * int(procs)
-    # You must include all of these args! It will fail if one of them is left out
-    slurm = Slurm(queue='hp', mem=mem, ntasks=ntasks, hours=2, root_dir=os.getcwd())
 
+    print("Submitting Slurm jobs...")
+    # You must include all of these args! It will fail if one of them is left out
+    Slurm(queue='hp', mem=mem, ntasks=ntasks, hours=2, root_dir=os.getcwd())
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
