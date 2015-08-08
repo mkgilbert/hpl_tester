@@ -4,7 +4,7 @@ A tool to calculate various N and NB values for HPL and run several tests
 using different combinations of them on a given set of cores/nodes/memory.
 This will assume an avx2-compatible HPL program.
 
-Usage: hpl_tool.py <nodes> <cores/node> <mem in GB>
+Usage: python hpl_tool.py --nodes=<nodes> --procs=<cores/node> --mem=<mem in GB>
 """
 import math
 import sys
@@ -177,8 +177,7 @@ class HPLTool:
 
 
 class Slurm:
-    # TODO: need to know how many folders there are and pass that in as the array #
-    # TODO: get every line of the .dirs_list.tmp file and use SLURM_ARRAY_TASK_ID to get a line
+
     def __init__(self, **kwargs):
         # create a temp file to hold a list of all the directories
         try:
