@@ -22,8 +22,9 @@ class HPLParser:
             output_files = os.listdir('output')
 
             for file in output_files:
-                results_line = linecache.getline(os.path.join('output', file), 48)
-                results = results_line.split(' ')
+                results_line = linecache.getline(os.path.join('output', file), 49)
+                results = results_line.split()
+                print(results)
                 d = {
                     'N': results[1],
                     'NB': results[2],
@@ -31,11 +32,24 @@ class HPLParser:
                     'Gflops': results[6]
                 }
                 flops_results.append(d)
+        
+        best = 0
+        best_dict = {}
+        for result in flops_results:
+            temp = float(result['Gflops'].split('e')[0])
+            if temp > best:
+                best = temp
+                best_dict = result
 
         with open('test_results', 'wb') as f:
+            f.write("Best result:\n")
+            for k,v in best_dict.items():
+                f.write(k + ": " + v + "  \n")
+            f.write("\n")
+            f.write("All results:\n")    
             for result in flops_results:
-                for k,v in result:
-                    f.write(k + "  " + v)
+                for k,v in result.items():
+                    f.write(k + ":  " + v + "  ")
                 f.write("\n")
 
         f.close()
