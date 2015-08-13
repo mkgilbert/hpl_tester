@@ -240,11 +240,11 @@ def main(argv):
     mem = None
 
     help_display = '''
-usage: python hpl_tester.py --nodes=<number_of_nodes> --procs=<procs_per_node> --mem=<memory_in_GB>
-note: ** all args are mandatory
+usage: python hpl_tester.py --nodes=<number_of_nodes> --procs=<procs_per_node> --mem=<memory_in_GB> [--time=<time_in_hours>]
+note: ** all args except --time are mandatory. The default time limit is 4 hours if none is provided
     '''
     try:
-        opts, args = getopt.getopt(argv, "hn:p:m:", ["nodes=", "procs=", "mem="])
+        opts, args = getopt.getopt(argv, "hn:p:m:t:", ["nodes=", "procs=", "mem=", "time="])
     except getopt.GetoptError:
         print(help_display)
         sys.exit(2)
@@ -263,10 +263,16 @@ note: ** all args are mandatory
             procs = int(arg)
         elif opt in ("-m", "--mem"):
             mem = int(arg)
+        elif opt in ("-t", "--time"):
+            hours = int(arg)
 
     if nodes is None or procs is None or mem is None:
         print(help_display)
         sys.exit(2)
+
+    # allow no hours to be provided
+    if hours is None:
+        hours = 4
 
     hpl = HPLTool(nodes, procs, mem)
     hpl.optimize_N_vals()
@@ -292,7 +298,7 @@ note: ** all args are mandatory
 
     print("Submitting Slurm jobs...")
     # You must include all of these args! It will fail if one of them is left out
-    Slurm(queue='hp', mem=mem, ntasks=ntasks, hours=2, root_dir=os.getcwd())
+    Slurm(queue='hp', mem=mem, ntasks=ntasks, hours=hours, root_dir=os.getcwd())
 
 if __name__ == '__main__':
     main(sys.argv[1:])
