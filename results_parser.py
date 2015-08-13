@@ -17,9 +17,9 @@ class HPLParser:
     def get_output_data(self):
         os.chdir(TEST_RUNS_DIR)
         unique_config_dirs = os.listdir('.')
-
+        all_results = {} # will look like {'1_node_2_cores': [], '2_nodes_4_cores': []}
         for dir in unique_config_dirs:
-            self.flops_results = []
+            flops_results = []
             os.chdir(dir)
             output_files = os.listdir(OUTPUT_DIR)
 
@@ -34,47 +34,54 @@ class HPLParser:
                     'Gflops': results[6],
                     'gflop_float': float(results[6].split('e')[0])
                 }
-                self.flops_results.append(d)
+                flops_results.append(d)
+            all_results[dir] = flops_results # dict key is directory name and value is list of results
 
-        return self.flops_results
+        return all_results
 
-    def get_best_flops(self):
+    def get_best_flops(self, flops_results):
         best = 0
-        self.best_result = {}
-        for result in self.flops_results:
+        best_result = {}
+        for result in flops_results:
             temp = result['gflop_float']
             if temp > best:
                 best = temp
-                self.best_result = result
+                best_result = result
         
-        return self.best_result
+        return best_result
 
     def sort(self, list, key):
-        self.sorted_results = sorted(list, key=itemgetter(key), reverse=True)        
-        return self.sorted_results
+        sorted_results = sorted(list, key=itemgetter(key), reverse=True)
+        return sorted_results
 
-    def print_all_to_file(self, file_name):
+    def print_all_to_file(self, file_name, all_results):
         with open(file_name, 'wb') as f:
-            f.write("Best result:\n")
-            for k,v in self.best_result.items():
-                if k == 'gflop_float':
-                    continue
-                f.write(k + ": " + v + "  \n")
-            f.write("\n\n")
-            f.write("All results:\n")    
-            for result in self.sorted_results:
-                for k,v in result.items():
+            for dir, results in all_results:
+                f.write("**************************\n")
+                f.write(dir + "\n")
+                f.write("**************************\n\n")
+                # get and print out best results for this directory
+                best = self.get_best_flops(results)
+                f.write("Best result:\n")
+                for k, v in best.items():
                     if k == 'gflop_float':
                         continue
-                    f.write(k + ":  " + v + "  ")
-                f.write("\n")
+                    f.write(k + ": " + v + "  \n")
+                f.write("\n\n")
+                # sort and print out all the rest of the results
+                f.write("All results:\n")
+                sorted_results = self.sort(results, 'gflop_float')
+                for result in sorted_results:
+                    for k,v in result.items():
+                        if k == 'gflop_float':
+                            continue
+                        f.write(k + ":  " + v + "  ")
+                    f.write("\n")
 
         f.close()
 
 if __name__ == '__main__':
     parser = HPLParser()
-    parser.get_output_data()
-    parser.get_best_flops()
-    parser.sort(parser.flops_results, 'gflop_float')
-    parser.print_all_to_file('test_results.txt')
+    all_results = parser.get_output_data()
+    parser.print_all_to_file('test_results.txt', all_results)
 

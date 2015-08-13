@@ -18,7 +18,7 @@ XHPL_PATH = os.path.join(HPL_BIN_DIR, os.listdir(HPL_BIN_DIR)[0])
 
 os.environ['PATH'] += (':' + XHPL_PATH) # add xhpl path to PATH environent variable
 
-HPL_DAT = Template('''HPLinpack benchmark input file # 3 nodes, 72 cpus - Haswell
+HPL_DAT = Template('''HPLinpack benchmark input file
 Innovative Computing Laboratory, University of Tennessee
 HPL.out      output file name (if any)
 6            device out (6=stdout,7=stderr,file)
