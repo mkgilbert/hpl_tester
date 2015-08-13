@@ -36,6 +36,7 @@ class HPLParser:
                 }
                 flops_results.append(d)
             all_results[dir] = flops_results # dict key is directory name and value is list of results
+            os.chdir('../')
 
         return all_results
 
