@@ -6,6 +6,7 @@ HPL options for a given configuration
 __author__ = 'Mike Gilbert'
 
 import os
+import sys
 import linecache
 from operator import itemgetter
 
@@ -19,6 +20,8 @@ class HPLParser:
         unique_config_dirs = os.listdir('.')
         all_results = {} # will look like {'1_node_2_cores': [], '2_nodes_4_cores': []}
         for dir in unique_config_dirs:
+            if os.path.isfile(dir):
+                continue
             flops_results = []
             os.chdir(dir)
             output_files = os.listdir(OUTPUT_DIR)
@@ -26,7 +29,6 @@ class HPLParser:
             for file in output_files:
                 results_line = linecache.getline(os.path.join(OUTPUT_DIR, file), 49)
                 results = results_line.split()
-                print(results)
                 d = {
                     'N': results[1],
                     'NB': results[2],
@@ -57,7 +59,7 @@ class HPLParser:
 
     def print_all_to_file(self, file_name, all_results):
         with open(file_name, 'wb') as f:
-            for dir, results in all_results:
+            for dir, results in all_results.items():
                 f.write("**************************\n")
                 f.write(dir + "\n")
                 f.write("**************************\n\n")
@@ -78,11 +80,16 @@ class HPLParser:
                             continue
                         f.write(k + ":  " + v + "  ")
                     f.write("\n")
+                f.write("\n\n")
 
         f.close()
 
 if __name__ == '__main__':
     parser = HPLParser()
+    print("Parsing all test runs..."),
     all_results = parser.get_output_data()
+    print("OK")
+    print("Printing all results to 'test_runs/test_results.txt'..."),
     parser.print_all_to_file('test_results.txt', all_results)
+    print("DONE")
 
