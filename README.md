@@ -6,6 +6,7 @@ This tool is designed to be used in conjunction with  SLURM, in order to run the
 
 ## How to Run
 *Python 2 only*
+
 1. Make sure hpl-2.1 is unpacked into the directory above the root directory of this repository (So that hpl-2.1 and hpl_tester directories are side-by-side).
 2. Make sure you have the correct mpi libraries in your path - They must be the same that you built hpl with (Just do `module load intel-mpi/5.0`)
 3. Run the hpl_tester.py from inside the hpl_tester directory. It takes 3 arguments that are required: number of nodes, number of processors per node, and memory per node in GB.
